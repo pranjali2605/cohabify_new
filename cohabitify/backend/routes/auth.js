@@ -70,7 +70,9 @@ router.post('/register', [
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        preferences: user.preferences,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
@@ -127,7 +129,10 @@ router.post('/login', [
       user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        preferences: user.preferences,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
@@ -147,7 +152,8 @@ router.get('/me', auth, async (req, res) => {
         username: req.user.username,
         email: req.user.email,
         preferences: req.user.preferences,
-        lastLogin: req.user.lastLogin
+        lastLogin: req.user.lastLogin,
+        createdAt: req.user.createdAt
       }
     });
   } catch (error) {
@@ -209,11 +215,26 @@ router.put('/profile', auth, [
         id: user._id,
         username: user.username,
         email: user.email,
-        preferences: user.preferences
+        preferences: user.preferences,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
     console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/auth/users
+// @desc    List all registered users (username and email)
+// @access  Private
+router.get('/users', auth, async (req, res) => {
+  try {
+    const users = await User.find({}, 'username email').sort({ createdAt: -1 }).lean();
+    res.json({ users });
+  } catch (error) {
+    console.error('List users error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

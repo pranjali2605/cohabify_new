@@ -18,6 +18,12 @@ const HabitTracker: React.FC = () => {
   const [showDuelForm, setShowDuelForm] = useState(false);
   const [selectedHabitForDuel, setSelectedHabitForDuel] = useState<string>('');
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'stats'>('list');
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+  const [habitFilter, setHabitFilter] = useState<'all' | string>('all');
   const [newHabit, setNewHabit] = useState({
     name: '',
     category: 'Health',
@@ -88,6 +94,16 @@ const HabitTracker: React.FC = () => {
       setSelectedHabitForDuel('');
     }
   };
+
+  // Helpers
+  const formatISODate = (d: Date) => d.toISOString().split('T')[0];
+  const hasCheckInOn = (habitId: string, dateStr: string) => {
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return false;
+    return habit.checkIns.some(ci => ci.date === dateStr);
+  };
+
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -199,6 +215,106 @@ const HabitTracker: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+              className="px-3 py-1 border rounded hover:bg-gray-50"
+            >
+              ← Prev
+            </button>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {currentMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
+            </h3>
+            <button
+              onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+              className="px-3 py-1 border rounded hover:bg-gray-50"
+            >
+              Next →
+            </button>
+          </div>
+
+          {/* Habit filter */}
+          <div className="mb-4">
+            <label className="text-sm text-gray-700 mr-2">Filter by habit:</label>
+            <select
+              value={habitFilter}
+              onChange={(e) => setHabitFilter(e.target.value as any)}
+              className="px-3 py-2 border rounded"
+            >
+              <option value="all">All Habits</option>
+              {habits.map(h => (
+                <option key={h.id} value={h.id}>{h.icon} {h.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center space-x-4 text-sm mb-4">
+            <div className="flex items-center space-x-2"><span className="w-4 h-4 rounded bg-green-500 inline-block" /> <span>Checked-in</span></div>
+            <div className="flex items-center space-x-2"><span className="w-4 h-4 rounded bg-red-500 inline-block" /> <span>No check-in</span></div>
+            <div className="flex items-center space-x-2"><span className="w-4 h-4 rounded bg-gray-200 inline-block" /> <span>Future</span></div>
+          </div>
+
+          {/* Weekday headers */}
+          <div className="grid grid-cols-7 gap-2 text-center text-xs text-gray-500 mb-2">
+            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+              <div key={d} className="py-1">{d}</div>
+            ))}
+          </div>
+
+          {(() => {
+            // Build a set of dates that have check-ins for the current filter
+            const completedDates = new Set<string>();
+            if (habitFilter === 'all') {
+              habits.forEach(h => h.checkIns.forEach(ci => completedDates.add(ci.date)));
+            } else {
+              const h = habits.find(x => x.id === habitFilter);
+              h?.checkIns.forEach(ci => completedDates.add(ci.date));
+            }
+
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const firstDayIdx = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            const cells: JSX.Element[] = [];
+            // Leading empty cells
+            for (let i = 0; i < firstDayIdx; i++) {
+              cells.push(<div key={`empty-${i}`} className="h-16 border rounded bg-gray-50" />);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+              const date = new Date(year, month, day);
+              const dateStr = formatISODate(date);
+              const isFuture = date > new Date(today.getFullYear(), today.getMonth(), today.getDate());
+              const hasCheckIn = completedDates.has(dateStr);
+              const bgClass = isFuture
+                ? 'bg-gray-100'
+                : hasCheckIn
+                  ? 'bg-green-500 text-white'
+                  : 'bg-red-500 text-white';
+              cells.push(
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(dateStr)}
+                  key={dateStr}
+                  className={`h-16 border rounded flex flex-col items-center justify-center ${bgClass}`}
+                >
+                  <div className="text-sm font-semibold">{day}</div>
+                </button>
+              );
+            }
+
+            // Render grid
+            return <div className="grid grid-cols-7 gap-2">{cells}</div>;
+          })()}
+        </div>
+      )}
 
       {/* Active Duels Section */}
       {habitDuels.filter(d => d.status === 'active').length > 0 && (
@@ -524,6 +640,60 @@ const HabitTracker: React.FC = () => {
               >
                 Start Duel ⚔️
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Details Modal */}
+      {selectedDate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Date Details - {new Date(selectedDate).toLocaleDateString()}</h3>
+              <button onClick={() => setSelectedDate(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-600">Click "Mark Check-in" to add a check-in for a habit on this date.</p>
+              <button
+                onClick={() => {
+                  const toMark = (habitFilter === 'all' ? habits : habits.filter(h => h.id === habitFilter));
+                  toMark.forEach(h => {
+                    if (!hasCheckInOn(h.id, selectedDate)) {
+                      checkInHabit(h.id, selectedDate);
+                    }
+                  });
+                }}
+                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              >
+                Mark all as checked
+              </button>
+            </div>
+            <div className="space-y-3">
+              {(habitFilter === 'all' ? habits : habits.filter(h => h.id === habitFilter)).map(habit => {
+                const checked = hasCheckInOn(habit.id, selectedDate);
+                return (
+                  <div key={habit.id} className="flex items-center justify-between p-3 border rounded">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xl">{habit.icon}</span>
+                      <div>
+                        <div className="font-medium text-gray-900">{habit.name}</div>
+                        <div className="text-xs text-gray-500">{checked ? 'Already checked in' : 'No check-in yet'}</div>
+                      </div>
+                    </div>
+                    <button
+                      disabled={checked}
+                      onClick={() => checkInHabit(habit.id, selectedDate)}
+                      className={`px-3 py-1 rounded text-white text-sm ${checked ? 'bg-green-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    >
+                      {checked ? 'Checked' : 'Mark Check-in'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button onClick={() => setSelectedDate(null)} className="px-4 py-2 border rounded hover:bg-gray-50">Close</button>
             </div>
           </div>
         </div>

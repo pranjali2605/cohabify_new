@@ -1,27 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Settings: React.FC = () => {
-  const { showSettings, setShowSettings, user } = useData();
+  const { showSettings, setShowSettings } = useData();
+  const { user, updateProfile } = useAuth();
   const [settings, setSettings] = useState({
     notifications: true,
-    darkMode: false,
+    // theme removed
     emailUpdates: true,
     habitReminders: true,
     roommateUpdates: true
   });
+  const [account, setAccount] = useState({ username: '', email: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleSave = () => {
-    // Save settings to localStorage or backend
-    localStorage.setItem('cohabitify_settings', JSON.stringify(settings));
-    setShowSettings(false);
+  // No theme initialization
+
+  // Initialize account fields from user
+  useEffect(() => {
+    if (user) {
+      setAccount({ username: user.username || '', email: user.email || '' });
+    }
+  }, [user?.username, user?.email]);
+
+  // No theme application
+
+  const handleSave = async () => {
+    setError(null);
+    setSuccess(null);
+    // Basic validation
+    if (!account.username.trim()) {
+      setError('Username cannot be empty');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: any = {};
+      // Include username/email if changed
+      if (user?.username !== account.username) payload.username = account.username.trim();
+      if (user?.email !== account.email) payload.email = account.email.trim();
+
+      await updateProfile(payload);
+      setSuccess('Settings saved successfully');
+    } catch (e: any) {
+      console.error('Failed to save settings', e);
+      setError(e?.message || 'Failed to save settings');
+    } finally {
+      // Optionally keep other local UI settings in localStorage
+      localStorage.setItem('cohabitify_settings', JSON.stringify(settings));
+      setSaving(false);
+    }
   };
 
   if (!showSettings) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md text-gray-900">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Settings</h2>
           <button
@@ -33,6 +75,38 @@ const Settings: React.FC = () => {
         </div>
 
         <div className="space-y-4">
+          {/* Feedback */}
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          {success && <div className="text-green-600 text-sm">{success}</div>}
+
+          {/* Account */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">Account</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Username</label>
+                <input
+                  type="text"
+                  value={account.username}
+                  onChange={(e) => setAccount(a => ({ ...a, username: e.target.value }))}
+                  className="w-full px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={account.email}
+                  onChange={(e) => setAccount(a => ({ ...a, email: e.target.value }))}
+                  className="w-full px-3 py-2 rounded border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="text-xs text-gray-600">
+                <p><strong>Member since:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">Push Notifications</span>
             <button
@@ -40,16 +114,6 @@ const Settings: React.FC = () => {
               className={`w-12 h-6 rounded-full ${settings.notifications ? 'bg-blue-600' : 'bg-gray-300'} relative transition-colors`}
             >
               <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${settings.notifications ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">Dark Mode</span>
-            <button
-              onClick={() => setSettings({...settings, darkMode: !settings.darkMode})}
-              className={`w-12 h-6 rounded-full ${settings.darkMode ? 'bg-blue-600' : 'bg-gray-300'} relative transition-colors`}
-            >
-              <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${settings.darkMode ? 'translate-x-6' : 'translate-x-0.5'}`} />
             </button>
           </div>
 
@@ -83,19 +147,13 @@ const Settings: React.FC = () => {
             </button>
           </div>
 
-          <div className="border-t pt-4">
-            <div className="text-sm text-gray-600 space-y-2">
-              <p><strong>Account:</strong> {user?.role === 'admin' ? 'Administrator' : 'User'}</p>
-              <p><strong>Member since:</strong> {user?.joinedDate}</p>
-            </div>
-          </div>
-
           <div className="flex space-x-3 pt-4">
             <button
               onClick={handleSave}
-              className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+              disabled={saving}
+              className={`flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50`}
             >
-              Save Settings
+              {saving ? 'Saving...' : 'Save Settings'}
             </button>
             <button
               onClick={() => setShowSettings(false)}

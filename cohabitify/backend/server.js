@@ -10,14 +10,30 @@ const habitRoutes = require('./routes/habits');
 const roommateRoutes = require('./routes/roommates');
 const secretRoutes = require('./routes/secrets');
 const moodRoutes = require('./routes/moods');
+const roomsRoutes = require('./routes/rooms');
 
 const app = express();
 
 // Security middleware
 app.use(helmet());
+
+// CORS configuration
+// Allow list can be configured via env: ALLOWED_ORIGINS=url1,url2
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || (
+  process.env.NODE_ENV === 'production'
+    ? 'https://your-domain.com'
+    : 'http://localhost:5173,http://localhost:5174'
+)).split(',').map(s => s.trim());
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : 'http://localhost:5173',
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like curl or mobile apps) and those in the allow list
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
 }));
 
 // Rate limiting
@@ -45,6 +61,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/roommates', roommateRoutes);
 app.use('/api/secrets', secretRoutes);
 app.use('/api/moods', moodRoutes);
+app.use('/api/rooms', roomsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -1,188 +1,250 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import apiClient from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
-interface Roommate {
-  id: string;
+interface Member { id?: string; _id?: string; username: string; email: string; }
+interface Room {
+  _id: string;
   name: string;
-  email: string;
-  joinedAt: string;
-}
-
-interface RoommateAnalytics {
-  totalChores: number;
-  completedChores: number;
-  totalExpenses: number;
-  yourShare: number;
+  code: string;
+  owner: Member;
+  members: Member[];
+  maxSize: number;
+  createdAt: string;
 }
 
 const RoomMate: React.FC = () => {
-  // Mock data
-  const mockRoommates: Roommate[] = [
-    { id: '1', name: 'Alex Johnson', email: 'alex@example.com', joinedAt: '2024-01-15' },
-    { id: '2', name: 'Sarah Chen', email: 'sarah@example.com', joinedAt: '2024-01-20' },
-    { id: '3', name: 'Mike Davis', email: 'mike@example.com', joinedAt: '2024-02-01' }
-  ];
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const mockAnalytics: RoommateAnalytics = {
-    totalChores: 24,
-    completedChores: 18,
-    totalExpenses: 450,
-    yourShare: 150
+  // Create form
+  const [roomName, setRoomName] = useState('My Room');
+  const [maxSize, setMaxSize] = useState<number>(5);
+
+  // Join form
+  const [joinCode, setJoinCode] = useState('');
+
+  // Owner-only edit state
+  const [editName, setEditName] = useState('');
+  const [editMaxSize, setEditMaxSize] = useState<number>(5);
+
+  // Initialize edit fields when room loads/changes
+  useEffect(() => {
+    if (room) {
+      setEditName(room.name);
+      setEditMaxSize(room.maxSize);
+    }
+  }, [room]);
+
+  const fetchMyRoom = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiClient.get('/rooms/me');
+      setRoom(res.data.room);
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to load room');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const [roommates] = useState<Roommate[]>(mockRoommates);
-  const [analytics] = useState<RoommateAnalytics>(mockAnalytics);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [showInviteForm, setShowInviteForm] = useState(false);
+  useEffect(() => {
+    fetchMyRoom();
+  }, []);
 
-  const handleInviteRoommate = () => {
-    if (inviteEmail.trim()) {
-      console.log('Inviting:', inviteEmail);
-      setInviteEmail('');
-      setShowInviteForm(false);
-      // In real app, would call API
+  const createRoom = async () => {
+    setError(null); setSuccess(null);
+    try {
+      const res = await apiClient.post('/rooms/create', { name: roomName, maxSize });
+      setRoom(res.data.room);
+      setSuccess('Room created');
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to create room');
+    }
+  };
+
+  const joinRoom = async () => {
+    setError(null); setSuccess(null);
+    try {
+      const code = joinCode.trim().toUpperCase();
+      const res = await apiClient.post('/rooms/join', { code });
+      setRoom(res.data.room);
+      setSuccess('Joined room');
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to join room');
+    }
+  };
+
+  const leaveRoom = async () => {
+    setError(null); setSuccess(null);
+    try {
+      await apiClient.post('/rooms/leave');
+      setRoom(null);
+      setSuccess('Left room');
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to leave room');
+    }
+  };
+
+  const copyCode = async () => {
+    if (!room) return;
+    try { await navigator.clipboard.writeText(room.code); setSuccess('Code copied'); } catch {}
+  };
+
+  // Determine if current user is the owner
+  const isOwner = !!(room && user && (
+    (room.owner?.id && room.owner.id === user.id) ||
+    ((room.owner as any)?._id && (room.owner as any)._id === user.id)
+  ));
+
+  // Owner: save updated room settings
+  const saveRoomSettings = async () => {
+    if (!room) return;
+    setError(null); setSuccess(null);
+    try {
+      const res = await apiClient.put(`/rooms/${room._id}`, {
+        name: editName,
+        maxSize: editMaxSize,
+      });
+      setRoom(res.data.room);
+      setSuccess('Room updated');
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to update room');
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">RoomMate Dashboard</h1>
-        <button 
-          onClick={() => setShowInviteForm(!showInviteForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700"
-        >
-          <span className="text-lg">👥</span>
-          <span>Invite Roommate</span>
-        </button>
+        <h1 className="text-3xl font-bold text-gray-900">Rooms</h1>
+        {room && (
+          <button onClick={leaveRoom} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Leave Room</button>
+        )}
       </div>
 
-      {/* Invite Form */}
-      {showInviteForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Invite Roommate</h3>
-          <div className="space-y-4">
+      {error && <div className="p-3 rounded bg-red-50 text-red-700 border border-red-200">{error}</div>}
+      {success && <div className="p-3 rounded bg-green-50 text-green-700 border border-green-200">{success}</div>}
+
+      {loading ? (
+        <div className="text-gray-600">Loading...</div>
+      ) : room ? (
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="roommate@example.com"
-              />
+              <h2 className="text-xl font-semibold text-gray-900">{room.name}</h2>
+              <p className="text-sm text-gray-600">Owner: {room.owner?.username}</p>
+              <p className="text-sm text-gray-600">Members: {room.members.length}/{room.maxSize}</p>
+              <p className="text-sm text-gray-600">Created: {new Date(room.createdAt).toLocaleDateString()}</p>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowInviteForm(false)}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleInviteRoommate}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-              >
-                Send Invitation
-              </button>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Room Code</p>
+              <div className="flex items-center space-x-2 justify-end">
+                <span className="text-2xl font-mono tracking-widest">{room.code}</span>
+                <button onClick={copyCode} className="px-3 py-1 border rounded hover:bg-gray-50 text-sm">Copy</button>
+              </div>
+            </div>
+          </div>
+          {isOwner && (
+            <div className="mb-6 p-4 border rounded">
+              <h4 className="font-medium text-gray-900 mb-3">Owner Settings</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Room Name</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Max Members</label>
+                  <select
+                    value={editMaxSize}
+                    onChange={(e) => setEditMaxSize(parseInt(e.target.value))}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {[2,3,4,5].map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 flex justify-end">
+                <button onClick={saveRoomSettings} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+              </div>
+            </div>
+          )}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Members</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {room.members.map(m => (
+                <div key={(m.id || m._id) as string} className="p-3 border rounded flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-gray-900">{m.username}</div>
+                    <div className="text-xs text-gray-600">{m.email}</div>
+                  </div>
+                  {room.owner?.id === m.id || (room.owner as any)?._id === (m as any)?._id ? (
+                    <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-200">Owner</span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Create Room */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4">Create a Room</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Room Name (optional)</label>
+                <input
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="My Room"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
+                <select
+                  value={maxSize}
+                  onChange={(e) => setMaxSize(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {[2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <button onClick={createRoom} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Create Room</button>
+            </div>
+          </div>
+
+          {/* Join Room */}
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-4">Join a Room</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Room Code</label>
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase tracking-widest"
+                  placeholder="e.g., ABC123"
+                />
+              </div>
+              <button onClick={joinRoom} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Join Room</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Chores</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.totalChores}</p>
-            </div>
-            <span className="text-2xl">📋</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">{analytics.completedChores}</p>
-            </div>
-            <span className="text-2xl">✅</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-              <p className="text-2xl font-bold text-gray-900">${analytics.totalExpenses}</p>
-            </div>
-            <span className="text-2xl">💰</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Your Share</p>
-              <p className="text-2xl font-bold text-gray-900">${analytics.yourShare}</p>
-            </div>
-            <span className="text-2xl">💳</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Roommates List */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h3 className="text-lg font-semibold mb-4">Current Roommates</h3>
-        {roommates.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {roommates.map((roommate) => (
-              <div key={roommate.id} className="p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-lg">👤</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{roommate.name}</h4>
-                    <p className="text-sm text-gray-600">{roommate.email}</p>
-                    <p className="text-xs text-gray-500">
-                      Joined {new Date(roommate.joinedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <span className="text-6xl block mb-4">👥</span>
-            <h4 className="text-lg font-medium text-gray-900 mb-2">No roommates yet</h4>
-            <p className="text-gray-600">Invite your roommates to start managing chores and expenses together!</p>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Chore Management</h3>
-          <p className="text-gray-600 mb-4">Assign and track household chores with your roommates.</p>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            Manage Chores
-          </button>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Expense Tracking</h3>
-          <p className="text-gray-600 mb-4">Split bills and track shared expenses easily.</p>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-            Track Expenses
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
