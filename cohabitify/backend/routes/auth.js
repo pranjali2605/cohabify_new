@@ -76,8 +76,15 @@ router.post('/register', [
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
+    // Handle duplicate key errors (e.g., unique email/username violations)
+    if (error && error.code === 11000) {
+      const dupField = Object.keys(error.keyPattern || {})[0] || 'field';
+      const message = dupField === 'email' ? 'Email already registered' : (dupField === 'username' ? 'Username already taken' : 'Duplicate value');
+      return res.status(400).json({ message });
+    }
+
+    console.error('Registration error:', error?.message || error, error?.stack || '');
+    return res.status(500).json({ message: 'Server error during registration' });
   }
 });
 

@@ -51,9 +51,23 @@ app.use(express.urlencoded({ extended: true }));
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 15000,
 })
 .then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => console.error('MongoDB connection error (on connect):', err));
+
+// Additional connection diagnostics
+mongoose.connection.on('connected', () => {
+  console.log('Mongoose connection established');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('Mongoose connection error event:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('Mongoose connection disconnected');
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
