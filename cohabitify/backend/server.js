@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,8 +12,11 @@ const roommateRoutes = require('./routes/roommates');
 const secretRoutes = require('./routes/secrets');
 const moodRoutes = require('./routes/moods');
 const roomsRoutes = require('./routes/rooms');
+const supportRoutes = require('./routes/support');
 
 const app = express();
+const server = http.createServer(app);
+let io; // socket disabled per request
 
 // Security middleware
 app.use(helmet());
@@ -76,6 +80,7 @@ app.use('/api/roommates', roommateRoutes);
 app.use('/api/secrets', secretRoutes);
 app.use('/api/moods', moodRoutes);
 app.use('/api/rooms', roomsRoutes);
+app.use('/api/support', supportRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -96,7 +101,9 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
+// Socket.IO disabled
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

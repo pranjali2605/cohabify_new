@@ -10,6 +10,8 @@ const Contact = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('idle');
+  const [delivered, setDelivered] = useState(null); // null | boolean
+  const [validationErrors, setValidationErrors] = useState([]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -22,10 +24,36 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate form submission
+    setValidationErrors([]);
+    // Client-side validation to avoid 400 from backend
+    const errs = [];
+    const name = (formData.name || '').trim();
+    const email = (formData.email || '').trim();
+    const subject = (formData.subject || '').trim();
+    const message = (formData.message || '').trim();
+    if (name.length < 2) errs.push('Full Name must be at least 2 characters.');
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) errs.push('Please enter a valid email address.');
+    if (message.length < 5) errs.push('Message must be at least 5 characters.');
+    if (subject.length > 150) errs.push('Subject cannot exceed 150 characters.');
+    if (errs.length > 0) {
+      setValidationErrors(errs);
+      setSubmitStatus('error');
+      setIsSubmitting(false);
+      return;
+    }
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/support/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, subject, message })
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (_) {}
+      if (!res.ok) throw new Error(data?.message || 'Failed to send');
+      setDelivered(data?.delivered !== false);
       setSubmitStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
@@ -101,8 +129,8 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Email Support</h3>
                     <p className="text-gray-600 mb-2">Get help with your account, billing, or technical issues</p>
-                    <a href="mailto:support@cohabify.com" className="text-blue-600 hover:text-blue-700 font-medium">
-                      support@cohabify.com
+                    <a href="mailto:harshita.g.2k@gmail.com" className="text-blue-600 hover:text-blue-700 font-medium">
+                      harshita.g.2k@gmail.com
                     </a>
                   </div>
                 </div>
@@ -125,7 +153,7 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Phone Support</h3>
                     <p className="text-gray-600 mb-2">Speak directly with our support team</p>
-                    <p className="text-blue-600 font-medium">+1 (555) 123-4567</p>
+                    <p className="text-blue-600 font-medium">+91 9988321773</p>
                     <p className="text-sm text-gray-500">Available Mon-Fri, 9AM-6PM PST</p>
                   </div>
                 </div>
@@ -137,9 +165,9 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Office Location</h3>
                     <p className="text-gray-600">
-                      123 Innovation Drive<br />
-                      San Francisco, CA 94105<br />
-                      United States
+                      Chitkara University<br />
+                      Rajpura, Patiala<br />
+                      India
                     </p>
                   </div>
                 </div>
@@ -171,11 +199,16 @@ const Contact = () => {
               
               {submitStatus === 'success' && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center">
+                  <div className="flex items-start">
                     <span className="text-green-600 text-xl mr-3">✅</span>
                     <div>
                       <h3 className="font-semibold text-green-800">Message Sent!</h3>
                       <p className="text-green-700 text-sm">We'll get back to you within 24 hours.</p>
+                      {delivered === false && (
+                        <p className="text-yellow-700 text-xs mt-2">
+                          Note: Email delivery is pending. We've received your message and will follow up shortly.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -187,7 +220,15 @@ const Contact = () => {
                     <span className="text-red-600 text-xl mr-3">❌</span>
                     <div>
                       <h3 className="font-semibold text-red-800">Error Sending Message</h3>
-                      <p className="text-red-700 text-sm">Please try again or contact us directly.</p>
+                      {validationErrors.length > 0 ? (
+                        <ul className="text-red-700 text-sm list-disc ml-5">
+                          {validationErrors.map((err, idx) => (
+                            <li key={idx}>{err}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-red-700 text-sm">Please try again or contact us directly.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -274,6 +315,7 @@ const Contact = () => {
                   {isSubmitting ? 'Sending...' : 'Send Message'}
                 </button>
               </form>
+
 
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <p className="text-sm text-gray-500 text-center">

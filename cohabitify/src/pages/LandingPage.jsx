@@ -210,15 +210,15 @@ const LandingPage = () => {
                 </div>
               </div>
               <p className="text-gray-700 mb-6">
-                "Cohabify completely changed how my roommates and I manage our apartment. The habit tracker keeps us all accountable, and the anonymous sharing feature helped us address issues we were too shy to bring up before."
+                "My flatmates finally stopped arguing about dishes! Now we argue about who gets the gold streak badge first. Cohabify made our PG life feel like a friendly tournament."
               </p>
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-blue-600 font-semibold">SM</span>
+                  <span className="text-blue-600 font-semibold">AP</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Sarah Martinez</h4>
-                  <p className="text-gray-600 text-sm">College Student, Austin</p>
+                  <h4 className="font-semibold text-gray-900">Aarav Patel</h4>
+                  <p className="text-gray-600 text-sm">College Student, Bengaluru</p>
                 </div>
               </div>
             </div>
@@ -230,15 +230,15 @@ const LandingPage = () => {
                 </div>
               </div>
               <p className="text-gray-700 mb-6">
-                "As someone who struggled with maintaining routines, the habit tracker in Cohabify has been a game-changer. The mood tracking feature also helps me understand my patterns better. Highly recommend!"
+                "Used to snooze my alarms ten times. Now I wake up to keep my streak alive. Cohabify turned my laziness into a leaderboard challenge—10/10 would recommend!"
               </p>
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-green-600 font-semibold">MJ</span>
+                  <span className="text-green-600 font-semibold">NK</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Michael Johnson</h4>
-                  <p className="text-gray-600 text-sm">Software Engineer, Seattle</p>
+                  <h4 className="font-semibold text-gray-900">Nisha Kapoor</h4>
+                  <p className="text-gray-600 text-sm">Software Engineer, Pune</p>
                 </div>
               </div>
             </div>
@@ -250,15 +250,15 @@ const LandingPage = () => {
                 </div>
               </div>
               <p className="text-gray-700 mb-6">
-                "Living with three other people used to be chaotic. Cohabify's roommate management tools made everything so much easier - from splitting bills to coordinating chores. We're all happier now!"
+                "Bills, chores, moods—sab sorted! Our flat now runs smoother than my mom’s pressure cooker. Cohabify is the real MVP of shared living."
               </p>
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-purple-600 font-semibold">AL</span>
+                  <span className="text-purple-600 font-semibold">RS</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">Alex Lee</h4>
-                  <p className="text-gray-600 text-sm">Graduate Student, Boston</p>
+                  <h4 className="font-semibold text-gray-900">Rohan Singh</h4>
+                  <p className="text-gray-600 text-sm">Graduate Student, Delhi</p>
                 </div>
               </div>
             </div>
@@ -353,7 +353,7 @@ const LandingPage = () => {
 
           <div className="text-center mt-12">
             <p className="text-gray-600 mb-4">Still have questions?</p>
-            <a href="mailto:support@cohabify.com" className="text-blue-600 hover:text-blue-700 font-semibold">
+            <a href="mailto:harshita.g.2k@gmail.com" className="text-blue-600 hover:text-blue-700 font-semibold">
               Contact our support team →
             </a>
           </div>
