@@ -7,6 +7,9 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Contact from './pages/Contact';
+import About from './pages/About';
+import Careers from './pages/Careers';
+import CareerApply from './pages/CareerApply';
 import Dashboard from './pages/Dashboard';
 import HabitTracker from './pages/HabitTracker';
 import RoomMate from './pages/RoomMate';
@@ -24,6 +27,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/careers/apply/:roleId" element={<CareerApply />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={

@@ -70,9 +70,6 @@ const LandingPage = () => {
             >
               Get Started Now →
             </Link>
-            <button className="text-gray-600 hover:text-gray-900 px-8 py-4 font-semibold text-lg">
-              Learn more →
-            </button>
           </div>
         </div>
       </section>
@@ -388,17 +385,15 @@ const LandingPage = () => {
             <div>
               <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Careers</a></li>
+                <li><Link to="/about" className="hover:text-white">About</Link></li>
+                <li><Link to="/careers" className="hover:text-white">Careers</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
+                <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
                 <li><a href="#" className="hover:text-white">Privacy</a></li>
               </ul>
             </div>
