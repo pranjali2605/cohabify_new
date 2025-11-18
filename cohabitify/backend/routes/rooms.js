@@ -1,16 +1,16 @@
-const express = require('express');
-
-const { body, validationResult } = require('express-validator');
-const auth = require('../middleware/auth');
-const Room = require('../models/Room');
-const {
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import auth from '../middleware/auth.js';
+import Room from '../models/Room.js';
+import {
   regenerateCode,
   getMyRoom,
   createRoom,
   joinRoom,
   leaveRoom,
   updateRoom,
-} = require('../controllers/roomsController');
+} from '../controllers/roomsController.js';
+
 const router = express.Router();
 
 // @route   POST /api/rooms/:id/regenerate-code
@@ -51,4 +51,4 @@ router.put('/:id', auth, [
   body('maxSize').optional().isInt({ min: 2, max: 5 }).withMessage('maxSize must be between 2 and 5'),
 ], updateRoom);
 
-module.exports = router;
+export default router;

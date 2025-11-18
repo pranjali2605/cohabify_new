@@ -1,5 +1,5 @@
-const { validationResult } = require('express-validator');
-const Mood = require('../models/Mood');
+import { validationResult } from 'express-validator';
+import Mood from '../models/Mood.js';
 
 // GET /api/moods
 async function getMoods(req, res) {
@@ -144,4 +144,4 @@ async function getMoodAnalytics(req, res) {
   }
 }
 
-module.exports = { getMoods, createMood, updateMood, deleteMood, getMoodAnalytics };
+export { getMoods, createMood, updateMood, deleteMood, getMoodAnalytics };

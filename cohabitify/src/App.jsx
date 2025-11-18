@@ -15,6 +15,7 @@ import HabitTracker from './pages/HabitTracker';
 import RoomMate from './pages/RoomMate';
 import SecretCircle from './pages/SecretCircle';
 import MoodMirror from './pages/MoodMirror';
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/careers" element={<Careers />} />
             <Route path="/careers/apply/:roleId" element={<CareerApply />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={

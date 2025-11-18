@@ -1,18 +1,22 @@
-const express = require('express');
-const http = require('http');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+import express from 'express';
+import http from 'http';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
 
-const authRoutes = require('./routes/auth');
-const habitRoutes = require('./routes/habits');
-const roommateRoutes = require('./routes/roommates');
-const secretRoutes = require('./routes/secrets');
-const moodRoutes = require('./routes/moods');
-const roomsRoutes = require('./routes/rooms');
-const supportRoutes = require('./routes/support');
+dotenv.config();
+
+// Import routes
+import emailRoutes from './routes/emailRoutes.js';
+import authRoutes from './routes/auth.js';
+import habitRoutes from './routes/habits.js';
+import roommateRoutes from './routes/roommates.js';
+import secretRoutes from './routes/secrets.js';
+import moodRoutes from './routes/moods.js';
+import roomsRoutes from './routes/rooms.js';
+import supportRoutes from './routes/support.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -124,6 +128,7 @@ app.use('/api/secrets', secretRoutes);
 app.use('/api/moods', moodRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/email', emailRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -147,6 +152,77 @@ app.use('*', (req, res) => {
 // Socket.IO disabled
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const HOST = process.env.HOST || '0.0.0.0';
+
+// Function to get the next available port
+const getNextAvailablePort = async (port) => {
+  const net = await import('net');
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', () => {
+      // Port is in use, try next port
+      resolve(getNextAvailablePort(port + 1));
+    });
+    server.listen(port, HOST, () => {
+      const { port: availablePort } = server.address();
+      server.close(() => resolve(availablePort));
+    });
+  });
+};
+
+// Start the server
+const startServer = async () => {
+  try {
+    const availablePort = await getNextAvailablePort(PORT);
+    
+    server.listen(availablePort, HOST, () => {
+      console.log(`Server running on http://${HOST}:${availablePort}`);
+      
+      // Update frontend .env file if in development
+      if (process.env.NODE_ENV !== 'production') {
+        // Use dynamic import at the top level of the module
+        Promise.all([
+          import('fs'),
+          import('path')
+        ]).then(([fs, path]) => {
+          const envPath = path.join(process.cwd(), '..', '.env');
+          
+          try {
+            let envContent = '';
+            if (fs.existsSync(envPath)) {
+              envContent = fs.readFileSync(envPath, 'utf8');
+              // Remove existing VITE_API_URL if it exists
+              envContent = envContent.replace(/^VITE_API_URL=.*$/gm, '');
+            }
+            
+            // Add/update VITE_API_URL with the current port
+            envContent += `\nVITE_API_URL=http://localhost:${availablePort}\n`;
+            fs.writeFileSync(envPath, envContent.trim() + '\n');
+            console.log(`Updated frontend .env with VITE_API_URL=http://localhost:${availablePort}`);
+          } catch (err) {
+            console.warn('Could not update frontend .env file:', err.message);
+          }
+        }).catch(err => {
+          console.warn('Failed to load required modules:', err);
+        });
+      }
+    });
+    
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${availablePort} is in use, trying next port...`);
+        startServer();
+      } else {
+        console.error('Server error:', err);
+        process.exit(1);
+      }
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();

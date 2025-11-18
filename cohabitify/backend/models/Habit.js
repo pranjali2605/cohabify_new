@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const habitSchema = new mongoose.Schema({
   title: {
@@ -119,4 +119,5 @@ habitSchema.methods.updateStreak = function() {
   this.streak.longest = Math.max(this.streak.longest, longestStreak);
 };
 
-module.exports = mongoose.model('Habit', habitSchema);
+const Habit = mongoose.model('Habit', habitSchema);
+export default Habit;

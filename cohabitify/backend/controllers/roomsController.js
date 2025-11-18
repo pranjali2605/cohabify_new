@@ -1,5 +1,5 @@
-const { validationResult } = require('express-validator');
-const Room = require('../models/Room');
+import { validationResult } from 'express-validator';
+import Room from '../models/Room.js';
 
 // Helper to generate a simple alphanumeric room code
 function generateCode(length = 6) {
@@ -208,7 +208,7 @@ async function updateRoom(req, res) {
   }
 }
 
-module.exports = {
+export {
   regenerateCode,
   getMyRoom,
   createRoom,

@@ -1,5 +1,5 @@
-const { validationResult } = require('express-validator');
-const Secret = require('../models/Secret');
+import { validationResult } from 'express-validator';
+import Secret from '../models/Secret.js';
 
 // GET /api/secrets
 async function getSecrets(req, res) {
@@ -123,4 +123,4 @@ async function deleteSecret(req, res) {
   }
 }
 
-module.exports = { getSecrets, createSecret, toggleLike, addComment, deleteSecret };
+export { getSecrets, createSecret, toggleLike, addComment, deleteSecret };

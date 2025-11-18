@@ -1,7 +1,7 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const auth = require('../middleware/auth');
-const { getRoommates, inviteRoommate, getRoommateAnalytics } = require('../controllers/roommateController');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import auth from '../middleware/auth.js';
+import { getRoommates, inviteRoommate, getRoommateAnalytics } from '../controllers/roommateController.js';
 
 const router = express.Router();
 
@@ -28,4 +28,4 @@ router.post('/invite', auth, [
 // @access  Private
 router.get('/analytics', auth, getRoommateAnalytics);
 
-module.exports = router;
+export default router;

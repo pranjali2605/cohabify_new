@@ -1,7 +1,17 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const auth = require('../middleware/auth');
-const { register, login, me, updateProfile, listUsers } = require('../controllers/authController');
+import express from 'express';
+import { body } from 'express-validator';
+import auth from '../middleware/auth.js';
+import { 
+  register, 
+  login, 
+  me, 
+  updateProfile, 
+  listUsers 
+} from '../controllers/authController.js';
+import { 
+  requestPasswordReset, 
+  resetPassword 
+} from '../controllers/authPasswordController.js';
 
 const router = express.Router();
 
@@ -57,8 +67,30 @@ router.put('/profile', auth, [
 ], updateProfile);
 
 // @route   GET /api/auth/users
-// @desc    List all registered users (username and email)
-// @access  Private
+// @desc    Get all users (admin only)
+// @access  Private/Admin
 router.get('/users', auth, listUsers);
 
-module.exports = router;
+// @route   POST /api/auth/forgot-password
+// @desc    Request password reset
+// @access  Public
+router.post('/forgot-password', [
+  body('email')
+    .isEmail()
+    .withMessage('Please enter a valid email')
+    .normalizeEmail()
+], requestPasswordReset);
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset password with token
+// @access  Public
+router.post('/reset-password', [
+  body('token')
+    .notEmpty()
+    .withMessage('Token is required'),
+  body('newPassword')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long')
+], resetPassword);
+
+export default router;

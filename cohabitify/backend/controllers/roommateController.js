@@ -1,4 +1,4 @@
-const { validationResult } = require('express-validator');
+import { validationResult } from 'express-validator';
 
 // NOTE: Roommates currently use mock data in routes. Keeping same responses here.
 
@@ -119,4 +119,4 @@ async function getRoommateAnalytics(req, res) {
   }
 }
 
-module.exports = { getRoommates, inviteRoommate, getRoommateAnalytics };
+export { getRoommates, inviteRoommate, getRoommateAnalytics };

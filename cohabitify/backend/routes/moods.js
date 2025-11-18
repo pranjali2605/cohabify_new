@@ -1,14 +1,14 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const Mood = require('../models/Mood');
-const auth = require('../middleware/auth');
-const {
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import Mood from '../models/Mood.js';
+import auth from '../middleware/auth.js';
+import {
   getMoods,
   createMood,
   updateMood,
   deleteMood,
   getMoodAnalytics,
-} = require('../controllers/moodController');
+} from '../controllers/moodController.js';
 
 const router = express.Router();
 
@@ -69,4 +69,4 @@ router.delete('/:id', auth, deleteMood);
 // @access  Private
 router.get('/analytics', auth, getMoodAnalytics);
 
-module.exports = router;
+export default router;

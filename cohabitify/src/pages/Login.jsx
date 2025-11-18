@@ -117,7 +117,7 @@ const Login = () => {
             <div className="text-red-600 text-sm text-center">{error}</div>
           )}
 
-          <div>
+          <div className="space-y-4">
             <button
               type="submit"
               disabled={loading}
@@ -125,6 +125,11 @@ const Login = () => {
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
+            <div className="text-center">
+              <Link to="/forgot-password" className="text-sm text-indigo-600 hover:text-indigo-500">
+                Forgot password?
+              </Link>
+            </div>
           </div>
         </form>
       </div>

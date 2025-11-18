@@ -1,6 +1,7 @@
-const jwt = require('jsonwebtoken');
-const { validationResult } = require('express-validator');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import { validationResult } from 'express-validator';
+import User from '../models/User.js';
+import { initializeUserData } from './initUserController.js';
 
 // Generate JWT token
 function generateToken(id) {
@@ -29,6 +30,14 @@ async function register(req, res) {
 
     const user = new User({ username, email, password });
     await user.save();
+
+    // Initialize user data with default values
+    try {
+      await initializeUserData(user._id);
+    } catch (error) {
+      console.error('Error initializing user data:', error);
+      // Don't fail registration if initialization fails
+    }
 
     const token = generateToken(user._id);
 
@@ -169,4 +178,4 @@ async function listUsers(req, res) {
   }
 }
 
-module.exports = { register, login, me, updateProfile, listUsers };
+export { register, login, me, updateProfile, listUsers };

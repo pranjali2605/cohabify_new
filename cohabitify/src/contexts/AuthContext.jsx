@@ -65,6 +65,12 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle validation errors
+        if (response.status === 400 && data.errors && data.errors.length > 0) {
+          // Join all validation error messages
+          const errorMessage = data.errors.map(err => err.msg).join('. ');
+          throw new Error(errorMessage);
+        }
         throw new Error(data.message || 'Registration failed');
       }
 

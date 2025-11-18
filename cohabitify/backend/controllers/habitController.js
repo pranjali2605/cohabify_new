@@ -1,8 +1,8 @@
-const { validationResult } = require('express-validator');
-const Habit = require('../models/Habit');
+import { validationResult } from 'express-validator';
+import Habit from '../models/Habit.js';
 
 // GET /api/habits
-async function getHabits(req, res) {
+const getHabits = async (req, res) => {
   try {
     const habits = await Habit.find({
       user: req.user._id,
@@ -207,11 +207,11 @@ async function getAnalytics(req, res) {
   }
 }
 
-module.exports = {
+export {
   getHabits,
   createHabit,
   updateHabit,
   completeHabit,
   deleteHabit,
-  getAnalytics,
+  getAnalytics
 };

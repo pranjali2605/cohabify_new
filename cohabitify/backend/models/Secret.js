@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const secretSchema = new mongoose.Schema({
   content: {
@@ -60,4 +60,5 @@ const secretSchema = new mongoose.Schema({
 secretSchema.index({ createdAt: -1 });
 secretSchema.index({ author: 1 });
 
-module.exports = mongoose.model('Secret', secretSchema);
+const Secret = mongoose.model('Secret', secretSchema);
+export default Secret;

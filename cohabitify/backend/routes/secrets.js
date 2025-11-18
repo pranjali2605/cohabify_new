@@ -1,14 +1,14 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const Secret = require('../models/Secret');
-const auth = require('../middleware/auth');
-const {
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import Secret from '../models/Secret.js';
+import auth from '../middleware/auth.js';
+import {
   getSecrets,
   createSecret,
   toggleLike,
   addComment,
   deleteSecret,
-} = require('../controllers/secretController');
+} from '../controllers/secretController.js';
 
 const router = express.Router();
 
@@ -57,4 +57,4 @@ router.post('/:id/comment', auth, [
 // @access  Private
 router.delete('/:id', auth, deleteSecret);
 
-module.exports = router;
+export default router;

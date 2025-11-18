@@ -1,5 +1,5 @@
-const nodemailer = require('nodemailer');
-const { validationResult } = require('express-validator');
+import nodemailer from 'nodemailer';
+import { validationResult } from 'express-validator';
 
 // Configure transporter from env
 // Required env: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SUPPORT_TO
@@ -119,7 +119,6 @@ async function chat(req, res) {
   }
 }
 
-module.exports = { contact, chat, sendChatEmail };
 // Verify SMTP transport configuration
 async function verify(req, res) {
   try {
@@ -131,4 +130,4 @@ async function verify(req, res) {
   }
 }
 
-module.exports.verify = verify;
+export { contact, chat, sendChatEmail, verify };

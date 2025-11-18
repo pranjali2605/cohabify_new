@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const moodSchema = new mongoose.Schema({
   user: {
@@ -40,4 +40,5 @@ const moodSchema = new mongoose.Schema({
 moodSchema.index({ user: 1, date: -1 });
 moodSchema.index({ user: 1, mood: 1 });
 
-module.exports = mongoose.model('Mood', moodSchema);
+const Mood = mongoose.model('Mood', moodSchema);
+export default Mood;

@@ -1,15 +1,15 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const Habit = require('../models/Habit');
-const auth = require('../middleware/auth');
-const {
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import Habit from '../models/Habit.js';
+import auth from '../middleware/auth.js';
+import {
   getHabits,
   createHabit,
   updateHabit,
   completeHabit,
   deleteHabit,
   getAnalytics,
-} = require('../controllers/habitController');
+} from '../controllers/habitController.js';
 
 const router = express.Router();
 
@@ -87,4 +87,4 @@ router.delete('/:id', auth, deleteHabit);
 // @access  Private
 router.get('/analytics', auth, getAnalytics);
 
-module.exports = router;
+export default router;

@@ -1,6 +1,7 @@
-const express = require('express');
-const { body } = require('express-validator');
-const { contact, chat, verify } = require('../controllers/supportController');
+import express from 'express';
+import { body } from 'express-validator';
+import { contact, chat, verify } from '../controllers/supportController.js';
+
 const router = express.Router();
 
 // POST /api/support/contact
@@ -25,6 +26,9 @@ router.post(
   chat
 );
 
-module.exports = router;
+// Diagnostic: verify SMTP configuration
+router.get('/verify', verify);
+
+export default router;
 // Diagnostic: verify SMTP configuration
 router.get('/verify', verify);
