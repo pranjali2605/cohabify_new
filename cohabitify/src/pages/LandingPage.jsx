@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ScrollToTop from '../components/ui/ScrollToTop';
 
 const LandingPage = () => {
   return (
@@ -404,6 +405,7 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+      <ScrollToTop />
     </div>
   );
 };
