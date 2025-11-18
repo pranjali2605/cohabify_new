@@ -1,4 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+
+// Create an axios instance for API calls
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
 
 const DataContext = createContext(undefined);
 
@@ -100,10 +110,7 @@ export const DataProvider = ({ children }) => {
   });
 
   const [secrets, setSecrets] = useState(() => {
-    return getStoredData('cohabify_secrets', [
-      { id: '1', content: 'I secretly love doing dishes when no one is around', author: 'Anonymous', timestamp: '2024-01-15T10:30:00Z', likes: 12, comments: ['Same here!', 'That\'s so wholesome'], isAnonymous: true },
-      { id: '2', content: 'Sometimes I pretend to be asleep when it\'s my turn to take out trash', author: 'john_doe', timestamp: '2024-01-14T15:45:00Z', likes: 8, comments: ['We all do this 😅'], isAnonymous: false }
-    ]);
+    return getStoredData('cohabify_secrets', []);
   });
 
   const [moods, setMoods] = useState(() => {
@@ -304,16 +311,15 @@ export const DataProvider = ({ children }) => {
 
   // Secret functions
   const addSecret = (secret) => {
-    const newSecret = { ...secret, id: Date.now().toString() };
-    setSecrets(prev => [newSecret, ...prev]);
+    setSecrets(prev => [secret, ...prev]);
   };
 
   const updateSecret = (id, updates) => {
-    setSecrets(prev => prev.map(secret => secret.id === id ? { ...secret, ...updates } : secret));
+    setSecrets(prev => prev.map(secret => secret._id === id ? { ...secret, ...updates } : secret));
   };
 
   const deleteSecret = (id) => {
-    setSecrets(prev => prev.filter(secret => secret.id !== id));
+    setSecrets(prev => prev.filter(secret => secret._id !== id));
   };
 
   // Mood functions
@@ -329,6 +335,40 @@ export const DataProvider = ({ children }) => {
   const deleteMood = (id) => {
     setMoods(prev => prev.filter(mood => mood.id !== id));
   };
+
+  // Fetch all secrets from the backend
+  useEffect(() => {
+    const fetchSecrets = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.log('No authentication token found. User needs to log in.');
+          return;
+        }
+
+        const response = await apiClient.get('/secrets', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        });
+
+        if (response.data) {
+          setSecrets(Array.isArray(response.data) ? response.data : []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch secrets:', error);
+        if (error.response?.status === 401) {
+          console.log('Authentication failed. Redirecting to login...');
+          // You can add a redirect to login here if needed
+          // navigate('/login');
+        }
+      }
+    };
+
+    fetchSecrets();
+  }, []);
 
   const value = {
     user,

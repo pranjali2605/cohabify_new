@@ -1,61 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useData } from '../contexts/DataContext';
+import apiClient from '../lib/api';
 
 const SecretCircle = () => {
-  // Mock data
-  const mockSecrets = [
-    {
-      id: '1',
-      content: 'Sometimes I eat the last slice of pizza and pretend I don\'t know who did it 🍕',
-      author: 'Anonymous',
-      isAnonymous: true,
-      likes: 5,
-      createdAt: '2024-01-15',
-      comments: [
-        { id: '1', content: 'We all know it\'s you, Mike! 😂', author: 'Sarah', createdAt: '2024-01-15' }
-      ]
-    },
-    {
-      id: '2',
-      content: 'I really appreciate how everyone keeps the common areas clean. It makes me happy to come home! ✨',
-      author: 'Alex',
-      isAnonymous: false,
-      likes: 8,
-      createdAt: '2024-01-14',
-      comments: []
-    }
-  ];
+  const { user, secrets, addSecret, deleteSecret: deleteSecretContext } = useData();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Fetch secrets on component mount
+  useEffect(() => {
+    const fetchSecrets = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get('/secrets');
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch secrets:', err);
+        setError('Failed to load secrets. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [secrets, setSecrets] = useState(mockSecrets);
+    fetchSecrets();
+    
+    // Set up polling for real-time updates (every 30 seconds)
+    const interval = setInterval(fetchSecrets, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newSecret, setNewSecret] = useState({ content: '', isAnonymous: true });
 
-  const handleCreateSecret = () => {
-    if (newSecret.content.trim()) {
-      const secret = {
-        id: Date.now().toString(),
+  const handleCreateSecret = async () => {
+    if (!newSecret.content.trim()) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await apiClient.post('/secrets', {
         content: newSecret.content,
-        author: newSecret.isAnonymous ? 'Anonymous' : 'You',
-        isAnonymous: newSecret.isAnonymous,
-        likes: 0,
-        createdAt: new Date().toISOString(),
-        comments: []
-      };
-      setSecrets([secret, ...secrets]);
+        isAnonymous: newSecret.isAnonymous
+      });
+      
+      addSecret(response.data.secret);
       setNewSecret({ content: '', isAnonymous: true });
       setShowCreateForm(false);
+    } catch (err) {
+      console.error('Failed to create secret:', err);
+      setError('Failed to post secret. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleToggleLike = (id) => {
-    setSecrets(secrets.map(secret => 
-      secret.id === id 
-        ? { ...secret, likes: secret.likes + 1 }
-        : secret
-    ));
+  const handleToggleLike = async (id) => {
+    try {
+      const response = await apiClient.post(`/secrets/${id}/like`);
+      
+      // Update local state with the updated secret
+      setSecrets(secrets.map(secret => 
+        secret._id === id ? response.data.secret : secret
+      ));
+    } catch (err) {
+      console.error('Failed to like secret:', err);
+      setError('Failed to like secret. Please try again.');
+    }
   };
 
-  const handleDeleteSecret = (id) => {
-    setSecrets(secrets.filter(secret => secret.id !== id));
+  const handleDeleteSecret = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this secret?')) return;
+    
+    try {
+      await apiClient.delete(`/secrets/${id}`);
+      deleteSecretContext(id);
+    } catch (err) {
+      console.error('Failed to delete secret:', err);
+      setError('Failed to delete secret. Please try again.');
+    }
   };
 
   return (
@@ -116,6 +137,19 @@ const SecretCircle = () => {
         </div>
       )}
 
+      {isLoading && secrets.length === 0 && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading secrets...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+      
       <div className="space-y-4">
         {secrets.map((secret) => (
           <div key={secret.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -126,7 +160,7 @@ const SecretCircle = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">
-                    {secret.isAnonymous ? 'Anonymous' : secret.author}
+                    {secret.isAnonymous ? 'Anonymous' : (secret.author?.username || 'You')}
                   </p>
                   <p className="text-sm text-gray-500">
                     {new Date(secret.createdAt).toLocaleDateString()}
@@ -154,21 +188,23 @@ const SecretCircle = () => {
 
               <div className="flex items-center space-x-2 text-gray-600">
                 <span className="text-sm">💬</span>
-                <span>{secret.comments.length} comments</span>
+                <span>{secret.comments?.length || 0} comments</span>
               </div>
             </div>
 
-            {secret.comments.length > 0 && (
+            {secret.comments?.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="space-y-3">
-                  {secret.comments.map((comment) => (
+                  {secret.comments?.map((comment) => (
                     <div key={comment.id} className="flex items-start space-x-3">
                       <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
                         <span className="text-xs">💬</span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900">{comment.author}</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {comment.isAnonymous ? 'Anonymous' : (comment.author?.username || 'You')}
+                          </span>
                           <span className="text-xs text-gray-500">
                             {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
