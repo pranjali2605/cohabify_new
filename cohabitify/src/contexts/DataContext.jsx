@@ -2,8 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 // Create an axios instance for API calls
+const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: `${apiBase}/api`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -354,9 +355,9 @@ export const DataProvider = ({ children }) => {
           withCredentials: true
         });
 
-        if (response.data) {
-          setSecrets(Array.isArray(response.data) ? response.data : []);
-        }
+        const apiData = response?.data;
+        const list = Array.isArray(apiData?.secrets) ? apiData.secrets : [];
+        setSecrets(list);
       } catch (error) {
         console.error('Failed to fetch secrets:', error);
         if (error.response?.status === 401) {

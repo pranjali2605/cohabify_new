@@ -152,7 +152,7 @@ const SecretCircle = () => {
       
       <div className="space-y-4">
         {secrets.map((secret) => (
-          <div key={secret.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div key={secret._id || secret.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -196,7 +196,7 @@ const SecretCircle = () => {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="space-y-3">
                   {secret.comments?.map((comment) => (
-                    <div key={comment.id} className="flex items-start space-x-3">
+                    <div key={comment._id || comment.id} className="flex items-start space-x-3">
                       <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
                         <span className="text-xs">💬</span>
                       </div>
